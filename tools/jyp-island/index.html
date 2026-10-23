@@ -1,0 +1,1889 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JYP 女團島</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="JYP 旗下 8 個女團做成 3D 小島，成員是 Q 版插畫立牌，點島看藝名、國籍、出生年。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: full-bleed 3D brick archipelago; the HUD floats on top in brick-edged panels (right column on desktop, bottom sheet on phones). */
+:root {
+  --sky: #CFE6F2;
+  --sea: #2D7DB5;
+  --paper: #FFFFFF;
+  --ink: #16233A;
+  --muted: #56667B;
+  --line: #D3DCE7;
+  --chip: #EEF3F8;
+  --brick: #D62839;
+  --brick-shadow: #8E1724;
+  --gold: #F2B705;
+  --display: "Bricolage Grotesque", "Noto Sans TC", system-ui, sans-serif;
+  --body: "Noto Sans TC", system-ui, -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sky: #0D1B2A; --sea: #164A70; --paper: #122033; --ink: #E6EDF5; --muted: #9AAABD;
+    --line: #2A3D55; --chip: #1A2D44; --brick: #FF5468; --brick-shadow: #A3283A; --gold: #FFC93C;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --sky: #0D1B2A; --sea: #164A70; --paper: #122033; --ink: #E6EDF5; --muted: #9AAABD;
+  --line: #2A3D55; --chip: #1A2D44; --brick: #FF5468; --brick-shadow: #A3283A; --gold: #FFC93C;
+  color-scheme: dark;
+}
+
+html, body { height: 100%; margin: 0; }
+body { background: var(--sky); color: var(--ink); font-family: var(--body); font-size: 14px; overflow: hidden; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+
+.hud {
+  position: fixed; inset: 0;
+  padding-block: calc(env(safe-area-inset-top, 0px) + 12px) calc(env(safe-area-inset-bottom, 0px) + 12px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 12px;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "top panel" ". panel" "time panel";
+  pointer-events: none;
+}
+.hud > * { pointer-events: auto; }
+
+.box {
+  background: var(--paper); border: 2px solid var(--line); border-radius: 12px;
+  box-shadow: 0 4px 0 var(--line);
+}
+
+.topbar { grid-area: top; justify-self: start; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 10px 14px; max-width: 100%; }
+.brand h1 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 24px; letter-spacing: -0.01em; line-height: 1.1; text-wrap: balance; }
+.brand p { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+.actions { display: flex; gap: 8px; }
+
+button { font: inherit; color: inherit; cursor: pointer; }
+.btn {
+  border: 0; border-radius: 8px; padding: 7px 14px; font-weight: 700; font-size: 13px;
+  background: var(--chip); color: var(--ink); box-shadow: 0 3px 0 var(--line);
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.btn.primary { background: var(--brick); color: #fff; box-shadow: 0 3px 0 var(--brick-shadow); }
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+.btn.primary:active { box-shadow: 0 1px 0 var(--brick-shadow); }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+.panel { grid-area: panel; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.panel-scroll { overflow-y: auto; padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.nat { display: flex; flex-wrap: wrap; gap: 6px; }
+.nat-title { width: 100%; margin: 0; font-size: 11.5px; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+.chip {
+  border: 2px solid var(--line); background: var(--chip); border-radius: 999px; padding: 3px 10px;
+  font-size: 12.5px; display: inline-flex; gap: 6px; align-items: baseline;
+}
+.chip b { font-family: var(--mono); font-weight: 500; font-size: 11.5px; color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: #1d1600; }
+.chip[aria-pressed="true"] b { color: #3d3000; }
+.nat-summary { margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--muted); }
+.nat-summary strong { color: var(--ink); }
+
+h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 26px; line-height: 1.1; letter-spacing: -0.01em; text-wrap: balance; }
+.lede { margin: 6px 0 0; line-height: 1.65; color: var(--muted); max-width: 60ch; }
+
+/* A 2x1 brick swatch: the group's color with two studs */
+.brick {
+  --c: #999; flex: none; width: 30px; height: 18px; border-radius: 4px; background:
+    radial-gradient(circle at 25% 50%, rgba(255,255,255,.38) 0 3.5px, transparent 4.5px),
+    radial-gradient(circle at 75% 50%, rgba(255,255,255,.38) 0 3.5px, transparent 4.5px), var(--c);
+  box-shadow: inset 0 -3px 0 rgba(0,0,0,.18);
+}
+.brick.lg { width: 44px; height: 26px; }
+
+.glist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.glist button {
+  width: 100%; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 10px;
+  text-align: left; background: transparent; border: 2px solid transparent; border-radius: 10px; padding: 7px 8px;
+}
+.glist button:hover { background: var(--chip); }
+.glist button[disabled] { opacity: .45; cursor: default; }
+.gname { font-weight: 700; font-size: 15px; }
+.gmeta { display: block; color: var(--muted); font-size: 12px; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.tag { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; background: var(--chip); color: var(--muted); white-space: nowrap; }
+.tag.live { color: #0d6b3e; background: #D7F3E3; }
+.tag.new { color: #7a4b00; background: #FFEFC2; }
+:root[data-theme="dark"] .tag.live { color: #8FE3B5; background: #173A2A; }
+:root[data-theme="dark"] .tag.new { color: #FFD580; background: #3D2E0D; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tag.live { color: #8FE3B5; background: #173A2A; }
+  :root:not([data-theme="light"]) .tag.new { color: #FFD580; background: #3D2E0D; }
+}
+
+.back { align-self: flex-start; border: 0; background: none; padding: 0; color: var(--muted); font-size: 13px; font-weight: 700; }
+.back:hover { color: var(--ink); }
+.ghead { display: flex; align-items: center; gap: 12px; }
+.ghead .label { margin: 3px 0 0; font-size: 11.5px; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin: 0; }
+.facts div { background: var(--chip); border-radius: 8px; padding: 7px 10px; }
+.facts dt { font-size: 11px; color: var(--muted); letter-spacing: .06em; }
+.facts dd { margin: 2px 0 0; font-weight: 700; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 13px; }
+.facts dd.txt { font-family: var(--body); }
+.para { margin: 0; line-height: 1.65; }
+.para.small { font-size: 12.5px; color: var(--muted); }
+
+.mtable { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.mtable th { text-align: left; font-size: 11px; letter-spacing: .06em; color: var(--muted); font-weight: 700; padding: 0 6px 6px; border-bottom: 2px solid var(--line); }
+.mtable td { padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.mtable td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.mtable tbody tr { cursor: pointer; }
+.mtable tbody tr:hover td { background: var(--chip); }
+.mtable tr.sel td { background: color-mix(in srgb, var(--gold) 28%, transparent); }
+.mtable tr.nat td:first-child { box-shadow: inset 3px 0 0 var(--gold); }
+.mname { font-weight: 700; }
+.mzh { color: var(--muted); font-weight: 400; margin-left: 4px; }
+.mnote { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+
+.src { border-top: 2px solid var(--line); padding: 10px 16px 12px; font-size: 11.5px; line-height: 1.6; color: var(--muted); }
+.src a { color: inherit; }
+
+.timeline { grid-area: time; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 6px 12px; padding: 10px 14px; }
+.timeline label { font-size: 11.5px; letter-spacing: .08em; font-weight: 700; color: var(--muted); }
+.timeline output { font-family: var(--display); font-weight: 800; font-size: 22px; font-variant-numeric: tabular-nums; min-width: 3ch; text-align: right; }
+.timeline input { width: 100%; accent-color: var(--brick); }
+.timeline .event { grid-column: 1 / -1; margin: 0; font-size: 12.5px; color: var(--muted); min-height: 1.5em; }
+.timeline .event strong { color: var(--ink); }
+
+.hint { position: absolute; left: 50%; transform: translateX(-50%); bottom: 0; margin: 0; }
+
+@media (max-width: 760px) {
+  .hud {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto 42%;
+    grid-template-areas: "top" "." "time" "panel";
+    gap: 8px;
+  }
+  .brand h1 { font-size: 20px; }
+  .topbar { padding: 8px 12px; gap: 8px 14px; }
+  .timeline { padding: 8px 12px; }
+  .timeline .event { min-height: 0; }
+  h2 { font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+</style>
+</head>
+<body>
+<div id="stage" aria-label="JYP 女團島 3D 地圖"></div>
+
+<div class="hud">
+  <header class="topbar box">
+    <div class="brand">
+      <h1>JYP 女團島</h1>
+      <p id="stats"></p>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btnTour" type="button">▶ 出道導覽</button>
+      <button class="btn" id="btnHome" type="button">全景</button>
+    </div>
+  </header>
+
+  <aside class="panel box" id="panel">
+    <div class="panel-scroll">
+      <div class="nat" id="natChips"></div>
+      <p class="nat-summary" id="natSummary" hidden></p>
+      <div id="panelBody" style="display:flex;flex-direction:column;gap:14px"></div>
+    </div>
+    <footer class="src">
+      資料截至 2026.10。出生年與國籍整理自維基百科、
+      <a href="https://kprofiles.com/" target="_blank" rel="noopener">Kpop Profiles</a>、
+      <a href="https://kpopping.com/" target="_blank" rel="noopener">kpopping</a> 與
+      <a href="https://www.koreajoongangdaily.com/" target="_blank" rel="noopener">Korea JoongAng Daily</a>；2026 新團資料以粉絲站為主，尚未與官方逐一核對。成員以 Q 版插畫立牌呈現，髮型、瀏海、眼型依各成員常見造型繪製，不是寫實肖像。
+    </footer>
+  </aside>
+
+  <div class="timeline box">
+    <label for="year">年份</label>
+    <input type="range" id="year" min="2007" max="2026" step="1" value="2026">
+    <output id="yearOut" for="year">2026</output>
+    <p class="event" id="yearEvent"></p>
+  </div>
+</div>
+
+<script type="application/json" id="island-data">
+{
+  "asOf": "2026-10-23",
+  "nationalities": {
+    "KR": "韓國",
+    "JP": "日本",
+    "TW": "台灣",
+    "CN": "中國",
+    "TH": "泰國",
+    "US": "美國",
+    "CA": "加拿大",
+    "AU": "澳洲"
+  },
+  "events": [
+    {
+      "year": 2015,
+      "text": "Wonder Girls 改成樂團形式回歸"
+    },
+    {
+      "year": 2016,
+      "text": "Jia 離開 miss A"
+    },
+    {
+      "year": 2022,
+      "text": "Jinni 退出 NMIXX"
+    },
+    {
+      "year": 2024,
+      "text": "KG 退出 VCHA"
+    },
+    {
+      "year": 2025,
+      "text": "VCHA 改名為 GIRLSET，四人繼續活動"
+    }
+  ],
+  "groups": [
+    {
+      "id": "wondergirls",
+      "name": "Wonder Girls",
+      "short": "WG",
+      "label": "JYP ENTERTAINMENT",
+      "debut": "2007-02-13",
+      "end": "2017-01-26",
+      "color": "#C1121F",
+      "legs": "#F4F1F1",
+      "angle": -67.5,
+      "radius": 16,
+      "hits": [
+        "Tell Me",
+        "So Hot",
+        "Nobody"
+      ],
+      "note": "JYP 第一個女團，〈Nobody〉紅到美國告示牌。2017 年解散。",
+      "members": [
+        {
+          "name": "Yubin",
+          "zh": "裕斌",
+          "nat": "KR",
+          "born": 1988,
+          "hair": "#1B1716",
+          "style": "short",
+          "bangs": "side",
+          "eyes": "cat",
+          "mouth": "smile"
+        },
+        {
+          "name": "Yeeun",
+          "zh": "譽恩",
+          "nat": "KR",
+          "born": 1989,
+          "hair": "#3A2418",
+          "style": "long",
+          "bangs": "side",
+          "eyes": "almond",
+          "mouth": "smile"
+        },
+        {
+          "name": "Sunmi",
+          "zh": "宣美",
+          "nat": "KR",
+          "born": 1992,
+          "hair": "#D9B98A",
+          "style": "bob",
+          "bangs": "full",
+          "eyes": "cat",
+          "mouth": "smile"
+        },
+        {
+          "name": "Hyelim",
+          "zh": "惠林",
+          "nat": "KR",
+          "born": 1992,
+          "hair": "#1B1716",
+          "style": "long",
+          "bangs": "curtain",
+          "eyes": "round",
+          "mouth": "open"
+        }
+      ],
+      "former": [
+        {
+          "name": "HyunA",
+          "zh": "泫雅",
+          "born": 1992,
+          "left": 2007
+        },
+        {
+          "name": "Sohee",
+          "zh": "昭熙",
+          "born": 1992,
+          "left": 2010
+        },
+        {
+          "name": "Sunye",
+          "zh": "先藝",
+          "born": 1989,
+          "left": 2015
+        }
+      ]
+    },
+    {
+      "id": "missa",
+      "name": "miss A",
+      "short": "miss A",
+      "label": "JYP ENTERTAINMENT",
+      "debut": "2010-07-01",
+      "end": "2017-12-27",
+      "color": "#D4A017",
+      "legs": "#24242C",
+      "angle": -22.5,
+      "radius": 16,
+      "hits": [
+        "Bad Girl Good Girl",
+        "Breathe",
+        "Hush"
+      ],
+      "note": "韓中混合女團，出道曲〈Bad Girl Good Girl〉。2017 年底解散。",
+      "members": [
+        {
+          "name": "Fei",
+          "zh": "霏",
+          "nat": "CN",
+          "born": 1987,
+          "hair": "#2A1A12",
+          "style": "long",
+          "bangs": "side",
+          "eyes": "almond",
+          "mouth": "smile"
+        },
+        {
+          "name": "Min",
+          "zh": "敏",
+          "nat": "KR",
+          "born": 1991,
+          "hair": "#1B1716",
+          "style": "pony",
+          "bangs": "full",
+          "eyes": "round",
+          "mouth": "open"
+        },
+        {
+          "name": "Suzy",
+          "zh": "秀智",
+          "nat": "KR",
+          "born": 1994,
+          "hair": "#3A2418",
+          "style": "long",
+          "bangs": "curtain",
+          "eyes": "round",
+          "mouth": "smile"
+        }
+      ],
+      "former": [
+        {
+          "name": "Jia",
+          "zh": "孟佳",
+          "born": 1989,
+          "left": 2016
+        }
+      ]
+    },
+    {
+      "id": "twice",
+      "name": "TWICE",
+      "short": "TWICE",
+      "label": "JYP ENTERTAINMENT",
+      "debut": "2015-10-20",
+      "color": "#FF6F91",
+      "legs": "#3B3F58",
+      "angle": 22.5,
+      "radius": 16,
+      "origin": "Mnet《SIXTEEN》（2015）",
+      "hits": [
+        "Like OOH-AHH",
+        "CHEER UP",
+        "TT",
+        "FANCY"
+      ],
+      "note": "韓日台九人團。2026 年 7 月有媒體報導子瑜可能不續約，JYP 表示仍在協商，尚未定案。",
+      "members": [
+        {
+          "name": "Nayeon",
+          "zh": "娜璉",
+          "nat": "KR",
+          "born": 1995,
+          "hair": "#5A3A26",
+          "style": "long",
+          "bangs": "full",
+          "eyes": "round",
+          "mouth": "bunny"
+        },
+        {
+          "name": "Jeongyeon",
+          "zh": "定延",
+          "nat": "KR",
+          "born": 1996,
+          "hair": "#3A2418",
+          "style": "bob",
+          "bangs": "side",
+          "eyes": "almond",
+          "mouth": "smile"
+        },
+        {
+          "name": "Momo",
+          "zh": "Momo",
+          "nat": "JP",
+          "born": 1996,
+          "hair": "#1B1716",
+          "style": "pony",
+          "bangs": "full",
+          "eyes": "almond",
+          "mouth": "open"
+        },
+        {
+          "name": "Sana",
+          "zh": "Sana",
+          "nat": "JP",
+          "born": 1996,
+          "hair": "#C99A66",
+          "style": "long",
+          "bangs": "curtain",
+          "eyes": "round",
+          "mouth": "open"
+        },
+        {
+          "name": "Jihyo",
+          "zh": "志效",
+          "nat": "KR",
+          "born": 1997,
+          "hair": "#2A1A12",
+          "style": "long",
+          "bangs": "side",
+          "eyes": "round",
+          "mouth": "smile"
+        },
+        {
+          "name": "Mina",
+          "zh": "Mina",
+          "nat": "JP",
+          "born": 1997,
+          "hair": "#1B1716",
+          "style": "long",
+          "note": "出生於美國德州，日本籍",
+          "bangs": "curtain",
+          "eyes": "droopy",
+          "mouth": "smile"
+        },
+        {
+          "name": "Dahyun",
+          "zh": "多賢",
+          "nat": "KR",
+          "born": 1998,
+          "hair": "#E4D3B8",
+          "style": "mid",
+          "bangs": "full",
+          "eyes": "round",
+          "mouth": "open"
+        },
+        {
+          "name": "Chaeyoung",
+          "zh": "彩瑛",
+          "nat": "KR",
+          "born": 1999,
+          "hair": "#A3324A",
+          "style": "bob",
+          "bangs": "full",
+          "eyes": "cat",
+          "mouth": "smile"
+        },
+        {
+          "name": "Tzuyu",
+          "zh": "子瑜",
+          "nat": "TW",
+          "born": 1999,
+          "hair": "#1B1716",
+          "style": "long",
+          "bangs": "full",
+          "eyes": "round",
+          "mouth": "smile"
+        }
+      ]
+    },
+    {
+      "id": "itzy",
+      "name": "ITZY",
+      "short": "ITZY",
+      "label": "JYP ENTERTAINMENT",
+      "debut": "2019-02-12",
+      "color": "#7B5CFA",
+      "legs": "#1F1D2B",
+      "angle": 67.5,
+      "radius": 16,
+      "hits": [
+        "DALLA DALLA",
+        "ICY",
+        "WANNABE"
+      ],
+      "note": "出道 9 天就靠〈DALLA DALLA〉拿下音樂節目一位，刷新當時女團的紀錄。",
+      "members": [
+        {
+          "name": "Yeji",
+          "zh": "禮志",
+          "nat": "KR",
+          "born": 2000,
+          "hair": "#7A2E2E",
+          "style": "long",
+          "bangs": "side",
+          "eyes": "cat",
+          "mouth": "smile"
+        },
+        {
+          "name": "Lia",
+          "zh": "Lia",
+          "nat": "KR",
+          "born": 2000,
+          "hair": "#2A1A12",
+          "style": "long",
+          "bangs": "curtain",
+          "eyes": "round",
+          "mouth": "smile"
+        },
+        {
+          "name": "Ryujin",
+          "zh": "留真",
+          "nat": "KR",
+          "born": 2001,
+          "hair": "#1B1716",
+          "style": "mid",
+          "bangs": "side",
+          "eyes": "cat",
+          "mouth": "smile"
+        },
+        {
+          "name": "Chaeryeong",
+          "zh": "彩領",
+          "nat": "KR",
+          "born": 2001,
+          "hair": "#3A2418",
+          "style": "mid",
+          "bangs": "full",
+          "eyes": "droopy",
+          "mouth": "open"
+        },
+        {
+          "name": "Yuna",
+          "zh": "有娜",
+          "nat": "KR",
+          "born": 2003,
+          "hair": "#1B1716",
+          "style": "long",
+          "bangs": "full",
+          "eyes": "round",
+          "mouth": "open"
+        }
+      ]
+    },
+    {
+      "id": "niziu",
+      "name": "NiziU",
+      "short": "NiziU",
+      "label": "JYP × SONY MUSIC",
+      "debut": "2020-12-02",
+      "color": "#2FA4E7",
+      "legs": "#F4F6FA",
+      "angle": 112.5,
+      "radius": 16,
+      "origin": "《Nizi Project》（2020）",
+      "hits": [
+        "Make you happy",
+        "Step and a step"
+      ],
+      "note": "JYP 和 Sony Music 合作的日本九人團，在日本出道。",
+      "members": [
+        {
+          "name": "Mako",
+          "nat": "JP",
+          "born": 2001,
+          "hair": "#2A1A12",
+          "style": "long"
+        },
+        {
+          "name": "Rio",
+          "nat": "JP",
+          "born": 2002,
+          "hair": "#1B1716",
+          "style": "short"
+        },
+        {
+          "name": "Maya",
+          "nat": "JP",
+          "born": 2002,
+          "hair": "#5A3A26",
+          "style": "bob"
+        },
+        {
+          "name": "Riku",
+          "nat": "JP",
+          "born": 2002,
+          "hair": "#3A2418",
+          "style": "twin"
+        },
+        {
+          "name": "Ayaka",
+          "nat": "JP",
+          "born": 2003,
+          "hair": "#1B1716",
+          "style": "long"
+        },
+        {
+          "name": "Mayuka",
+          "nat": "JP",
+          "born": 2003,
+          "hair": "#2A1A12",
+          "style": "bun"
+        },
+        {
+          "name": "Rima",
+          "nat": "JP",
+          "born": 2004,
+          "hair": "#C99A66",
+          "style": "pony"
+        },
+        {
+          "name": "Miihi",
+          "nat": "JP",
+          "born": 2004,
+          "hair": "#3A2418",
+          "style": "long"
+        },
+        {
+          "name": "Nina",
+          "nat": "JP",
+          "born": 2005,
+          "hair": "#1B1716",
+          "style": "long",
+          "note": "出生於美國"
+        }
+      ]
+    },
+    {
+      "id": "nmixx",
+      "name": "NMIXX",
+      "short": "NMIXX",
+      "label": "JYP ENTERTAINMENT",
+      "debut": "2022-02-22",
+      "color": "#13A89E",
+      "legs": "#1E2A33",
+      "angle": 157.5,
+      "radius": 16,
+      "hits": [
+        "O.O",
+        "DASH",
+        "Love Me Like This"
+      ],
+      "note": "主打把不同曲風拼在同一首歌裡的「MIXX POP」。",
+      "members": [
+        {
+          "name": "Lily",
+          "zh": "Lily",
+          "nat": "AU",
+          "born": 2002,
+          "hair": "#D8B27A",
+          "style": "long",
+          "note": "韓裔澳洲人",
+          "bangs": "curtain",
+          "eyes": "round",
+          "mouth": "open"
+        },
+        {
+          "name": "Haewon",
+          "zh": "海媛",
+          "nat": "KR",
+          "born": 2003,
+          "hair": "#2A1A12",
+          "style": "long",
+          "bangs": "curtain",
+          "eyes": "almond",
+          "mouth": "smile"
+        },
+        {
+          "name": "Sullyoon",
+          "zh": "雪允",
+          "nat": "KR",
+          "born": 2004,
+          "hair": "#1B1716",
+          "style": "long",
+          "bangs": "full",
+          "eyes": "round",
+          "mouth": "smile"
+        },
+        {
+          "name": "Bae",
+          "zh": "BAE",
+          "nat": "KR",
+          "born": 2004,
+          "hair": "#3A2418",
+          "style": "bob",
+          "bangs": "full",
+          "eyes": "cat",
+          "mouth": "smile"
+        },
+        {
+          "name": "Jiwoo",
+          "zh": "智友",
+          "nat": "KR",
+          "born": 2005,
+          "hair": "#6B3F2A",
+          "style": "twin",
+          "bangs": "full",
+          "eyes": "round",
+          "mouth": "open"
+        },
+        {
+          "name": "Kyujin",
+          "zh": "圭珍",
+          "nat": "KR",
+          "born": 2006,
+          "hair": "#1B1716",
+          "style": "pony",
+          "bangs": "side",
+          "eyes": "almond",
+          "mouth": "open"
+        }
+      ],
+      "former": [
+        {
+          "name": "Jinni",
+          "zh": "Jinni",
+          "born": 2004,
+          "left": 2022
+        }
+      ]
+    },
+    {
+      "id": "girlset",
+      "name": "GIRLSET",
+      "short": "GIRLSET",
+      "label": "JYP × REPUBLIC RECORDS",
+      "debut": "2024-01-26",
+      "color": "#FF8C2B",
+      "legs": "#2B2236",
+      "angle": 202.5,
+      "radius": 20,
+      "origin": "《A2K》（2023）",
+      "hits": [
+        "SeVit (Hey Hey Hey)",
+        "Girls of the Year"
+      ],
+      "note": "以 VCHA 之名在美國出道，2025 年 8 月改名為 GIRLSET。島放得比較遠，代表她們的基地在洛杉磯。",
+      "members": [
+        {
+          "name": "Lexi",
+          "nat": "US",
+          "born": 2005,
+          "hair": "#1B1716",
+          "style": "long"
+        },
+        {
+          "name": "Camila",
+          "nat": "CA",
+          "born": 2005,
+          "hair": "#5A3A26",
+          "style": "long",
+          "note": "出生於西班牙、在加拿大長大，各來源國籍標示不一"
+        },
+        {
+          "name": "Kendall",
+          "nat": "US",
+          "born": 2006,
+          "hair": "#3A2418",
+          "style": "pony"
+        },
+        {
+          "name": "Savanna",
+          "nat": "US",
+          "born": 2006,
+          "hair": "#2A1A12",
+          "style": "bun"
+        }
+      ],
+      "former": [
+        {
+          "name": "KG",
+          "left": 2024
+        },
+        {
+          "name": "Kaylee",
+          "left": 2025
+        }
+      ]
+    },
+    {
+      "id": "ourbirthday",
+      "name": "OURBIRTHDAY",
+      "short": "OB",
+      "label": "INNIT ENTERTAINMENT",
+      "debut": "2026-08-19",
+      "color": "#8BC34A",
+      "legs": "#F4F6FA",
+      "angle": 247.5,
+      "radius": 16,
+      "subsidiary": true,
+      "hits": [
+        "HUNGRY",
+        "Squeezy"
+      ],
+      "note": "JYP 子公司 INNIT 推出的七人團，NMIXX 之後 JYP 體系的第一個新女團。成員最小 2010 年生。",
+      "members": [
+        {
+          "name": "Chorok",
+          "nat": "KR",
+          "born": 2005,
+          "hair": "#2A1A12",
+          "style": "long"
+        },
+        {
+          "name": "Hyewon",
+          "nat": "KR",
+          "born": 2005,
+          "hair": "#1B1716",
+          "style": "bob"
+        },
+        {
+          "name": "Hyejin",
+          "nat": "KR",
+          "born": 2007,
+          "hair": "#3A2418",
+          "style": "pony",
+          "note": "隊長"
+        },
+        {
+          "name": "U",
+          "nat": "JP",
+          "born": 2008,
+          "hair": "#1B1716",
+          "style": "twin"
+        },
+        {
+          "name": "Baby",
+          "nat": "TW",
+          "born": 2009,
+          "hair": "#2A1A12",
+          "style": "bun"
+        },
+        {
+          "name": "Achiraya",
+          "nat": "TH",
+          "born": 2009,
+          "hair": "#1B1716",
+          "style": "long"
+        },
+        {
+          "name": "Kilala",
+          "nat": "JP",
+          "born": 2010,
+          "hair": "#5A3A26",
+          "style": "twin",
+          "note": "忙內"
+        }
+      ]
+    }
+  ]
+}
+</script>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const DATA = JSON.parse(document.getElementById('island-data').textContent);
+const NAT = DATA.nationalities;
+const GROUPS = DATA.groups;
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const yearOf = (d) => +String(d).slice(0, 4);
+const fmtDate = (d) => d.replaceAll('-', '.');
+
+const MEMBERS = [];
+GROUPS.forEach((g) => {
+  g.debutYear = yearOf(g.debut);
+  g.endYear = g.end ? yearOf(g.end) : null;
+  g.members.forEach((m, i) => { m.key = `${g.id}:${i}`; m.group = g; m.idx = i; MEMBERS.push(m); });
+});
+const memberByKey = new Map(MEMBERS.map((m) => [m.key, m]));
+const groupById = new Map(GROUPS.map((g) => [g.id, g]));
+
+const state = { groupId: null, memberKey: null, nat: null, year: 2026, touring: false };
+
+/* ---------- HUD ---------- */
+$('#stats').textContent = `${GROUPS.length} 個女團 · ${MEMBERS.length} 位成員立牌 · 2007–2026`;
+
+function renderNatChips() {
+  const counts = {};
+  MEMBERS.forEach((m) => { counts[m.nat] = (counts[m.nat] || 0) + 1; });
+  const order = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  $('#natChips').innerHTML = `<p class="nat-title">依國籍找成員</p>` + order.map((n) =>
+    `<button class="chip" type="button" data-nat="${n}" aria-pressed="${state.nat === n}">${esc(NAT[n])}<b>${counts[n]}</b></button>`).join('');
+  const sum = $('#natSummary');
+  if (!state.nat) { sum.hidden = true; return; }
+  const list = GROUPS.map((g) => {
+    const ms = g.members.filter((m) => m.nat === state.nat);
+    return ms.length ? `<strong>${esc(g.name)}</strong> ${ms.map((m) => esc(m.name)).join('、')}` : '';
+  }).filter(Boolean).join('；');
+  sum.innerHTML = `${esc(NAT[state.nat])}籍成員 ${counts[state.nat]} 位：${list}。島上的金色圈圈就是她們。`;
+  sum.hidden = false;
+}
+
+function statusTag(g) {
+  if (g.endYear) return `<span class="tag">已解散</span>`;
+  if (g.debutYear >= 2026) return `<span class="tag new">2026 新團</span>`;
+  return `<span class="tag live">活動中</span>`;
+}
+
+function renderHome() {
+  $('#panelBody').innerHTML = `
+    <div>
+      <h2>JYP 旗下女團</h2>
+      <p class="lede">${GROUPS.length} 個女團照出道順序繞著 JYP 本社排一圈。點一座島看成員；拖動下面的年份，可以看島一座座浮出海面。</p>
+    </div>
+    <ul class="glist">${GROUPS.map((g) => `
+      <li><button type="button" data-g="${g.id}" ${g.debutYear > state.year ? 'disabled' : ''}>
+        <span class="brick" style="--c:${g.color}"></span>
+        <span><span class="gname">${esc(g.name)}</span><span class="gmeta">${g.debutYear}${g.endYear ? '–' + g.endYear : ''} · ${g.members.length} 人</span></span>
+        ${statusTag(g)}
+      </button></li>`).join('')}
+    </ul>`;
+}
+
+function renderGroup(g) {
+  const status = g.endYear ? `${g.endYear} 解散` : '活動中';
+  const former = (g.former || []).map((f) =>
+    `${esc(f.name)}${f.zh && f.zh !== f.name ? `（${esc(f.zh)}）` : ''}${f.born ? `，${f.born} 年生` : ''}，${f.left} 年離團`).join('；');
+  $('#panelBody').innerHTML = `
+    <button class="back" type="button" data-home>← 全部女團</button>
+    <div class="ghead">
+      <span class="brick lg" style="--c:${g.color}"></span>
+      <div><h2>${esc(g.name)}</h2><p class="label">${esc(g.label)}</p></div>
+    </div>
+    <dl class="facts">
+      <div><dt>出道</dt><dd>${fmtDate(g.debut)}</dd></div>
+      <div><dt>人數</dt><dd>${g.members.length}</dd></div>
+      <div><dt>狀態</dt><dd class="txt">${status}</dd></div>
+    </dl>
+    <p class="para">${esc(g.note)}</p>
+    ${g.origin ? `<p class="para small">出身選秀：${esc(g.origin)}</p>` : ''}
+    <p class="para small">代表曲：${g.hits.map(esc).join('、')}</p>
+    <table class="mtable">
+      <thead><tr><th scope="col">藝名</th><th scope="col">國籍</th><th scope="col">出生年</th></tr></thead>
+      <tbody>${g.members.map((m) => `
+        <tr data-m="${m.key}" tabindex="0" class="${state.memberKey === m.key ? 'sel' : ''} ${state.nat === m.nat ? 'nat' : ''}">
+          <td><span class="mname">${esc(m.name)}</span>${m.zh && m.zh !== m.name ? `<span class="mzh">${esc(m.zh)}</span>` : ''}${m.note ? `<span class="mnote">${esc(m.note)}</span>` : ''}</td>
+          <td>${esc(NAT[m.nat])}</td>
+          <td class="num">${m.born}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${former ? `<p class="para small">前成員：${former}</p>` : ''}`;
+}
+
+function renderPanel() {
+  renderNatChips();
+  const g = state.groupId && groupById.get(state.groupId);
+  g ? renderGroup(g) : renderHome();
+}
+
+$('#panel').addEventListener('click', (e) => {
+  const t = e.target.closest('[data-g],[data-m],[data-home],[data-nat]');
+  if (!t) return;
+  stopTour();
+  if (t.dataset.g) selectGroup(t.dataset.g);
+  else if (t.dataset.m) selectMember(t.dataset.m);
+  else if ('home' in t.dataset) goHome();
+  else if (t.dataset.nat) { state.nat = state.nat === t.dataset.nat ? null : t.dataset.nat; renderPanel(); refreshMarks(); }
+});
+$('#panel').addEventListener('keydown', (e) => {
+  const tr = e.target.closest('tr[data-m]');
+  if (tr && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); stopTour(); selectMember(tr.dataset.m); }
+});
+
+/* ---------- Timeline ---------- */
+function yearEventText(y) {
+  const parts = [];
+  GROUPS.forEach((g) => { if (g.debutYear === y) parts.push(`<strong>${esc(g.name)}</strong> 出道`); });
+  GROUPS.forEach((g) => { if (g.endYear === y) parts.push(`<strong>${esc(g.name)}</strong> 解散`); });
+  DATA.events.forEach((ev) => { if (ev.year === y) parts.push(esc(ev.text)); });
+  const live = GROUPS.filter((g) => g.debutYear <= y && !(g.endYear && y >= g.endYear)).length;
+  return (parts.length ? parts.join('；') + '。' : '') + `這一年有 ${live} 個女團在活動。`;
+}
+function setYear(y) {
+  state.year = y;
+  $('#year').value = y;
+  $('#yearOut').textContent = y;
+  $('#yearEvent').innerHTML = yearEventText(y);
+  applyYear();
+  if (state.groupId && groupById.get(state.groupId).debutYear > y && !state.touring) goHome();
+  else if (!state.groupId) renderHome();
+}
+$('#year').addEventListener('input', (e) => { stopTour(); setYear(+e.target.value); });
+
+/* ---------- 3D ---------- */
+const stageEl = $('#stage');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+} catch (err) {
+  stageEl.innerHTML = '<p class="nogl">這台裝置的瀏覽器沒有開啟 WebGL，看不到 3D 島。右邊的成員資料一樣可以查。</p>';
+}
+
+await Promise.race([
+  Promise.all([
+    document.fonts.load('800 60px "Bricolage Grotesque"'),
+    document.fonts.load('700 30px "Noto Sans TC"', '女團成員出道'),
+  ]),
+  new Promise((r) => setTimeout(r, 1800)),
+]).catch(() => {});
+
+const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || '#888';
+const SKIN = '#FCE4D8';
+const SAND = '#E9D9A6';
+const GREY = new THREE.Color('#9AA1AA');
+const UP = new THREE.Vector3(0, 1, 0);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 400);
+let controls, seaMat, seaGeo;
+const pickables = [];
+const figs = [];
+let walker = null;
+
+const matCache = new Map();
+function mat(color, extra) {
+  const key = color + (extra ? JSON.stringify(extra) : '');
+  if (!matCache.has(key)) matCache.set(key, new THREE.MeshStandardMaterial({ color, roughness: 0.38, metalness: 0, ...(extra || {}) }));
+  return matCache.get(key);
+}
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+function fitFont(ctx, text, weight, family, maxSize, maxWidth) {
+  let size = maxSize;
+  do { ctx.font = `${weight} ${size}px ${family}`; size -= 2; } while (ctx.measureText(text).width > maxWidth && size > 10);
+}
+const DISPLAY = '"Bricolage Grotesque", "Noto Sans TC", sans-serif';
+const BODY = '"Noto Sans TC", sans-serif';
+
+const G = {
+  ring: new THREE.TorusGeometry(0.5, 0.055, 8, 36).rotateX(Math.PI / 2),
+  plank: new THREE.BoxGeometry(1.8, 0.18, 0.7),
+  standee: new THREE.PlaneGeometry(1.1, 2.2).translate(0, 1.1, 0),
+  base: new THREE.BoxGeometry(0.96, 0.12, 0.42),
+};
+
+function shade(hex, amt) {
+  const c = new THREE.Color(hex);
+  const hsl = {}; c.getHSL(hsl);
+  c.setHSL(hsl.h, hsl.s, THREE.MathUtils.clamp(hsl.l + amt, 0, 1));
+  return '#' + c.getHexString();
+}
+
+/* ---------- Idol illustrations ----------
+   Each member is drawn as a chibi idol on a 512x1024 artboard (feet at the bottom),
+   then cut out with a white border like a K-pop acrylic stand. */
+const CX = 256;
+const SKIN_SH = '#F3C7B8';
+const SKIN_LINE = '#D99A88';
+const EYE_SHAPES = { round: [58, 66, 0], almond: [62, 54, 0.08], cat: [64, 48, 0.22], droopy: [60, 58, -0.12] };
+const LOCK_Y = { long: 540, mid: 490, bob: 450, short: 380, pony: 470, twin: 470, bun: 440 };
+const BACK = { long: [735, 160], mid: [575, 165], bob: [470, 178], short: [420, 165], pony: [420, 165], twin: [420, 165], bun: [420, 165] };
+
+function blob(x, fill, stroke, lw = 4) {
+  x.fillStyle = fill; x.fill();
+  if (stroke) { x.strokeStyle = stroke; x.lineWidth = lw; x.stroke(); }
+}
+function mirror(x, s, fn) { x.save(); if (s < 0) { x.translate(CX * 2, 0); x.scale(-1, 1); } fn(); x.restore(); }
+
+function drawBackHair(x, o, hairFill, line) {
+  const [yb, wb] = BACK[o.style] || BACK.long;
+  x.beginPath();
+  x.moveTo(CX - 170, 250);
+  x.bezierCurveTo(CX - 196, 330, CX - wb - 12, yb - 130, CX - wb, yb);
+  const n = 4;
+  for (let k = 0; k < n; k++) {
+    const x0 = -wb + (2 * wb * k) / n, x1 = -wb + (2 * wb * (k + 1)) / n;
+    x.quadraticCurveTo(CX + (x0 + x1) / 2, yb - 30, CX + x1, yb + (k % 2 ? 0 : 8));
+  }
+  x.bezierCurveTo(CX + wb + 12, yb - 130, CX + 196, 330, CX + 170, 250);
+  x.bezierCurveTo(CX + 178, 80, CX - 178, 80, CX - 170, 250);
+  x.closePath();
+  blob(x, hairFill, line);
+  const tie = (tx, ty) => { x.beginPath(); x.arc(tx, ty, 16, 0, Math.PI * 2); blob(x, o.main, shade(o.main, -0.2), 3); };
+  if (o.style === 'pony') {
+    x.beginPath(); x.moveTo(CX + 110, 175);
+    x.bezierCurveTo(CX + 270, 190, CX + 265, 430, CX + 205, 640);
+    x.quadraticCurveTo(CX + 192, 600, CX + 168, 652);
+    x.bezierCurveTo(CX + 205, 440, CX + 195, 270, CX + 96, 232);
+    x.closePath(); blob(x, hairFill, line); tie(CX + 132, 190);
+  }
+  if (o.style === 'twin') {
+    [-1, 1].forEach((s) => mirror(x, s, () => {
+      x.beginPath(); x.moveTo(CX + 140, 190);
+      x.bezierCurveTo(CX + 270, 220, CX + 262, 470, CX + 220, 660);
+      x.quadraticCurveTo(CX + 200, 618, CX + 176, 668);
+      x.bezierCurveTo(CX + 205, 460, CX + 195, 290, CX + 122, 245);
+      x.closePath(); blob(x, hairFill, line); tie(CX + 152, 212);
+    }));
+  }
+  if (o.style === 'bun') {
+    x.beginPath(); x.arc(CX, 92, 64, 0, Math.PI * 2); blob(x, hairFill, line);
+    x.strokeStyle = 'rgba(255,255,255,.3)'; x.lineWidth = 7; x.beginPath(); x.arc(CX, 92, 40, Math.PI * 1.15, Math.PI * 1.6); x.stroke();
+    tie(CX, 150);
+  }
+}
+
+function drawBody(x, o) {
+  const dark = shade(o.main, -0.16), light = shade(o.main, 0.22);
+  const line = shade(o.main, -0.3);
+  const pants = o.variant === 2;
+  // legs
+  [-1, 1].forEach((s) => {
+    x.beginPath(); x.roundRect(CX + s * 31 - 18, 700, 36, 172, 17);
+    blob(x, pants ? '#2B2F45' : SKIN, pants ? '#1A1D2C' : SKIN_LINE, 3);
+    if (!pants) { x.beginPath(); x.roundRect(CX + s * 31 - 19, 806, 38, 66, 12); blob(x, '#FFFFFF', '#C9C9D6', 3); }
+    x.beginPath(); x.ellipse(CX + s * 36, 884, 31, 21, 0, 0, Math.PI * 2); blob(x, o.shoe, shade(o.shoe, -0.25), 3);
+    x.fillStyle = 'rgba(255,255,255,.55)'; x.beginPath(); x.ellipse(CX + s * 30, 876, 10, 5, 0, 0, Math.PI * 2); x.fill();
+  });
+  // neck
+  x.beginPath(); x.roundRect(CX - 22, 420, 44, 60, 10); blob(x, SKIN, SKIN_LINE, 3);
+  x.fillStyle = SKIN_SH; x.beginPath(); x.ellipse(CX, 438, 26, 12, 0, 0, Math.PI); x.fill();
+  // skirt or shorts
+  if (!pants) {
+    x.beginPath(); x.moveTo(CX - 70, 600); x.lineTo(CX - 132, 760);
+    for (let k = 0; k < 6; k++) x.quadraticCurveTo(CX - 132 + 44 * k + 22, 774, CX - 132 + 44 * (k + 1), 760);
+    x.lineTo(CX + 70, 600); x.closePath();
+    const sk = o.variant === 1 ? '#FFFFFF' : o.main;
+    const g = x.createLinearGradient(0, 600, 0, 770); g.addColorStop(0, sk); g.addColorStop(1, o.variant === 1 ? '#E9E6F2' : dark);
+    blob(x, g, o.variant === 1 ? '#C9C6D6' : line, 3.5);
+    x.strokeStyle = o.variant === 1 ? 'rgba(120,110,150,.35)' : 'rgba(0,0,0,.18)'; x.lineWidth = 3;
+    for (let k = 1; k < 6; k++) { x.beginPath(); x.moveTo(CX - 70 + 140 * k / 6, 606); x.lineTo(CX - 132 + 264 * k / 6, 760); x.stroke(); }
+    if (o.variant === 1) { x.strokeStyle = o.main; x.lineWidth = 7; x.beginPath(); x.moveTo(CX - 126, 742); x.lineTo(CX + 126, 742); x.stroke(); }
+  } else {
+    x.beginPath(); x.roundRect(CX - 68, 596, 136, 120, 18); blob(x, '#2B2F45', '#1A1D2C', 3);
+  }
+  // torso
+  x.beginPath(); x.moveTo(CX - 58, 458); x.quadraticCurveTo(CX - 98, 466, CX - 102, 492);
+  x.lineTo(CX - 72, 618); x.lineTo(CX + 72, 618); x.lineTo(CX + 102, 492); x.quadraticCurveTo(CX + 98, 466, CX + 58, 458); x.closePath();
+  const tg = x.createLinearGradient(0, 458, 0, 618);
+  tg.addColorStop(0, pants ? '#FFFFFF' : light); tg.addColorStop(1, pants ? '#ECEAF4' : o.main);
+  blob(x, tg, pants ? '#C9C6D6' : line, 3.5);
+  if (pants) {
+    [-1, 1].forEach((s) => mirror(x, s, () => {
+      x.beginPath(); x.moveTo(CX + 58, 458); x.quadraticCurveTo(CX + 98, 466, CX + 102, 492); x.lineTo(CX + 76, 622); x.lineTo(CX + 26, 622); x.lineTo(CX + 40, 520); x.closePath();
+      blob(x, o.main, line, 3.5);
+    }));
+  } else if (o.variant === 0) {
+    x.fillStyle = '#FFFFFF';
+    [-1, 1].forEach((s) => mirror(x, s, () => { x.beginPath(); x.moveTo(CX + 2, 462); x.lineTo(CX + 64, 460); x.lineTo(CX + 30, 512); x.closePath(); blob(x, '#FFFFFF', '#C9C6D6', 3); }));
+  }
+  // waist ribbon / belt
+  x.fillStyle = dark; x.fillRect(CX - 71, 598, 142, 16);
+  // chest bow
+  const bow = o.variant === 2 ? o.main : '#FFFFFF';
+  [-1, 1].forEach((s) => { x.beginPath(); x.moveTo(CX, 506); x.lineTo(CX + s * 30, 488); x.lineTo(CX + s * 30, 524); x.closePath(); blob(x, bow, shade(bow, -0.25), 3); });
+  x.beginPath(); x.arc(CX, 506, 8, 0, Math.PI * 2); blob(x, o.acc, shade(o.acc, -0.25), 2.5);
+  // sparkles
+  x.fillStyle = 'rgba(255,255,255,.8)';
+  for (let k = 0; k < 9; k++) { x.beginPath(); x.arc(CX - 60 + ((k * 47) % 120), 540 + ((k * 29) % 60), 2.6, 0, Math.PI * 2); x.fill(); }
+  // arms with puff sleeves
+  [-1, 1].forEach((s) => mirror(x, s, () => {
+    x.beginPath(); x.moveTo(CX + 92, 494); x.quadraticCurveTo(CX + 126, 566, CX + 132, 640);
+    x.lineTo(CX + 100, 646); x.quadraticCurveTo(CX + 92, 584, CX + 72, 520); x.closePath();
+    blob(x, SKIN, SKIN_LINE, 3);
+    x.beginPath(); x.arc(CX + 117, 654, 20, 0, Math.PI * 2); blob(x, SKIN, SKIN_LINE, 3);
+    x.beginPath(); x.ellipse(CX + 102, 498, 34, 40, -0.3, 0, Math.PI * 2); blob(x, pants ? o.main : light, line, 3.5);
+  }));
+}
+
+function drawEyeAnime(x, ex, ey, s, w, h, tilt, iris) {
+  x.save(); x.translate(ex, ey); x.scale(s, 1); x.rotate(-tilt);
+  x.beginPath(); x.moveTo(-w / 2, 0);
+  x.bezierCurveTo(-w / 2, -h * 0.62, w / 2, -h * 0.62, w / 2, -h * 0.05);
+  x.bezierCurveTo(w / 2, h * 0.5, -w / 2, h * 0.56, -w / 2, 0); x.closePath();
+  x.fillStyle = '#FFFFFF'; x.fill();
+  x.save(); x.clip();
+  const g = x.createLinearGradient(0, -h * 0.45, 0, h * 0.55);
+  g.addColorStop(0, '#24140E'); g.addColorStop(0.55, shade(iris, -0.12)); g.addColorStop(1, shade(iris, 0.18));
+  x.fillStyle = g; x.beginPath(); x.ellipse(0, h * 0.06, w * 0.36, h * 0.5, 0, 0, Math.PI * 2); x.fill();
+  x.fillStyle = '#120A07'; x.beginPath(); x.ellipse(0, h * 0.02, w * 0.17, h * 0.24, 0, 0, Math.PI * 2); x.fill();
+  x.fillStyle = 'rgba(255,230,200,.55)'; x.beginPath(); x.ellipse(0, h * 0.34, w * 0.22, h * 0.1, 0, 0, Math.PI * 2); x.fill();
+  x.restore();
+  x.fillStyle = '#FFFFFF';
+  x.beginPath(); x.ellipse(-w * 0.12, -h * 0.16, w * 0.12, h * 0.15, -0.3, 0, Math.PI * 2); x.fill();
+  x.beginPath(); x.arc(w * 0.13, h * 0.2, w * 0.05, 0, Math.PI * 2); x.fill();
+  // upper lash line with outer flick
+  x.fillStyle = '#2B1A16';
+  x.beginPath(); x.moveTo(-w / 2 - 3, 4);
+  x.bezierCurveTo(-w / 2 - 1, -h * 0.68, w / 2, -h * 0.72, w / 2 + 6, -h * 0.12);
+  x.lineTo(w / 2 + 16, -h * 0.34 - tilt * 24);
+  x.lineTo(w / 2 + 3, -h * 0.02);
+  x.bezierCurveTo(w / 2 - 3, -h * 0.55, -w / 2 + 4, -h * 0.5, -w / 2 + 3, 6);
+  x.closePath(); x.fill();
+  x.strokeStyle = 'rgba(160,100,90,.6)'; x.lineWidth = 2.5; x.lineCap = 'round';
+  x.beginPath(); x.moveTo(-w * 0.32, -h * 0.66); x.quadraticCurveTo(0, -h * 0.86, w * 0.42, -h * 0.6); x.stroke();
+  x.strokeStyle = 'rgba(90,50,45,.55)'; x.lineWidth = 2.5;
+  x.beginPath(); x.moveTo(-w * 0.22, h * 0.48); x.quadraticCurveTo(w * 0.1, h * 0.56, w * 0.38, h * 0.38); x.stroke();
+  x.restore();
+}
+
+function drawFace(x, o) {
+  // ears + face
+  [-1, 1].forEach((s) => { x.beginPath(); x.ellipse(CX + s * 150, 312, 20, 28, 0, 0, Math.PI * 2); blob(x, SKIN, SKIN_LINE, 3); });
+  x.beginPath(); x.moveTo(CX - 150, 262);
+  x.bezierCurveTo(CX - 150, 382, CX - 66, 446, CX, 448);
+  x.bezierCurveTo(CX + 66, 446, CX + 150, 382, CX + 150, 262);
+  x.bezierCurveTo(CX + 150, 140, CX - 150, 140, CX - 150, 262); x.closePath();
+  const fg = x.createRadialGradient(CX, 300, 40, CX, 320, 190); fg.addColorStop(0, SKIN); fg.addColorStop(1, '#F8D5C6');
+  blob(x, fg, SKIN_LINE, 3);
+  // blush
+  [-1, 1].forEach((s) => {
+    const g = x.createRadialGradient(CX + s * 98, 386, 2, CX + s * 98, 386, 36);
+    g.addColorStop(0, 'rgba(255,128,150,.55)'); g.addColorStop(1, 'rgba(255,128,150,0)');
+    x.fillStyle = g; x.fillRect(CX + s * 98 - 40, 346, 80, 80);
+    x.strokeStyle = 'rgba(240,110,130,.55)'; x.lineWidth = 2.5;
+    for (let k = 0; k < 3; k++) { x.beginPath(); x.moveTo(CX + s * (84 + k * 11), 392); x.lineTo(CX + s * (90 + k * 11), 380); x.stroke(); }
+  });
+  // brows
+  x.strokeStyle = shade(o.hair, o.lightHair ? -0.2 : 0.08); x.lineWidth = 5; x.lineCap = 'round';
+  [-1, 1].forEach((s) => { x.beginPath(); x.moveTo(CX + s * 36, 262); x.quadraticCurveTo(CX + s * 64, o.eyes === 'cat' ? 246 : 250, CX + s * 96, o.eyes === 'droopy' ? 266 : 256); x.stroke(); });
+  const [w, h, tilt] = EYE_SHAPES[o.eyes] || EYE_SHAPES.round;
+  [-1, 1].forEach((s) => drawEyeAnime(x, CX + s * 70, 332, s, w, h, tilt, o.iris));
+  // nose
+  x.strokeStyle = 'rgba(205,130,115,.85)'; x.lineWidth = 3;
+  x.beginPath(); x.moveTo(CX + 1, 382); x.lineTo(CX + 4, 388); x.stroke();
+  // mouth
+  const my = 412;
+  if (o.mouth === 'open' || o.mouth === 'bunny') {
+    x.beginPath(); x.moveTo(CX - 17, my - 4); x.quadraticCurveTo(CX, my, CX + 17, my - 4); x.quadraticCurveTo(CX, my + 28, CX - 17, my - 4); x.closePath();
+    blob(x, '#C2475A', '#9E3346', 2.5);
+    x.fillStyle = '#F28C9C'; x.beginPath(); x.ellipse(CX, my + 13, 8, 4.5, 0, 0, Math.PI * 2); x.fill();
+    if (o.mouth === 'bunny') { x.fillStyle = '#FFFFFF'; x.fillRect(CX - 8, my - 2, 7.5, 9); x.fillRect(CX + 0.5, my - 2, 7.5, 9); }
+  } else {
+    x.fillStyle = 'rgba(232,110,128,.55)'; x.beginPath(); x.ellipse(CX, my + 2, 12, 5, 0, 0, Math.PI * 2); x.fill();
+    x.strokeStyle = '#B5505E'; x.lineWidth = 3.5;
+    x.beginPath(); x.moveTo(CX - 15, my - 2); x.quadraticCurveTo(CX, my + 9, CX + 15, my - 2); x.stroke();
+  }
+  if (o.extra === 'dimple') { x.strokeStyle = 'rgba(205,130,115,.7)'; x.lineWidth = 2.5; x.beginPath(); x.arc(CX + 46, 414, 6, -1.2, 1.2); x.stroke(); }
+  if (o.extra === 'mole') { x.fillStyle = '#6B4636'; x.beginPath(); x.arc(CX + 34, 430, 3, 0, Math.PI * 2); x.fill(); }
+}
+
+function drawFrontHair(x, o, hairFill, line) {
+  // crown
+  x.beginPath(); x.moveTo(CX - 172, 304);
+  x.bezierCurveTo(CX - 190, 112, CX - 72, 66, CX, 68);
+  x.bezierCurveTo(CX + 72, 66, CX + 190, 112, CX + 172, 304);
+  x.lineTo(CX + 148, 304); x.bezierCurveTo(CX + 150, 206, CX + 82, 168, CX, 168);
+  x.bezierCurveTo(CX - 82, 168, CX - 150, 206, CX - 148, 304); x.closePath();
+  blob(x, hairFill, line, 3.5);
+  // face-framing locks
+  const ly = LOCK_Y[o.style] || 470;
+  [-1, 1].forEach((s) => mirror(x, s, () => {
+    x.beginPath(); x.moveTo(CX + 172, 220);
+    x.bezierCurveTo(CX + 178, 330, CX + 160, ly - 70, CX + 158, ly);
+    x.quadraticCurveTo(CX + 146, ly - 30, CX + 128, ly - 46);
+    x.bezierCurveTo(CX + 142, 380, CX + 140, 290, CX + 128, 214); x.closePath();
+    blob(x, hairFill, line, 3.5);
+  }));
+  // bangs
+  const strand = (xl, xr, tipX, tipY, top = 150) => {
+    x.beginPath(); x.moveTo(xl, top);
+    x.quadraticCurveTo(xl + (tipX - xl) * 0.3, tipY - 60, tipX, tipY);
+    x.quadraticCurveTo(xr - (xr - tipX) * 0.2, tipY - 70, xr, top); x.closePath();
+    blob(x, hairFill, line, 3);
+  };
+  if (o.bangs === 'full') {
+    const n = 7, w = 312 / n;
+    for (let k = 0; k < n; k++) {
+      const xl = CX - 156 + k * w - 6, xr = xl + w + 12;
+      strand(xl, xr, (xl + xr) / 2 + (k - 3) * 2, 262 + (k % 2) * 14);
+    }
+  } else if (o.bangs === 'side') {
+    for (let k = 0; k < 6; k++) {
+      const xl = CX - 150 + k * 52, xr = xl + 66;
+      strand(xl, xr, xr + 8, 214 + k * 15);
+    }
+  } else {
+    [-1, 1].forEach((s) => mirror(x, s, () => {
+      for (let k = 0; k < 3; k++) strand(CX + 4 + k * 44, CX + 64 + k * 46, CX + 78 + k * 30, 246 + k * 22, 140);
+    }));
+  }
+  // shine
+  x.strokeStyle = 'rgba(255,255,255,.38)'; x.lineWidth = 9; x.lineCap = 'round';
+  x.beginPath(); x.ellipse(CX, 196, 122, 46, 0, Math.PI * 1.12, Math.PI * 1.42); x.stroke();
+  x.beginPath(); x.ellipse(CX, 196, 122, 46, 0, Math.PI * 1.55, Math.PI * 1.85); x.stroke();
+  // accessory
+  if (o.accessory === 0) {
+    [-1, 1].forEach((s) => { x.beginPath(); x.moveTo(CX + 118, 150); x.lineTo(CX + 118 + s * 38, 126); x.lineTo(CX + 118 + s * 34, 176); x.closePath(); blob(x, o.acc, shade(o.acc, -0.25), 3); });
+    x.beginPath(); x.arc(CX + 118, 150, 11, 0, Math.PI * 2); blob(x, shade(o.acc, 0.15), shade(o.acc, -0.25), 3);
+  } else if (o.accessory === 1) {
+    x.save(); x.translate(CX - 120, 178); x.rotate(-0.3);
+    x.beginPath();
+    for (let k = 0; k < 10; k++) { const r = k % 2 ? 10 : 24, a = -Math.PI / 2 + k * Math.PI / 5; x.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+    x.closePath(); blob(x, '#FFD84D', '#D9A400', 3); x.restore();
+  }
+}
+
+function drawFan(x) {
+  // a fan holding a glowing lightstick
+  x.strokeStyle = '#3B3F58'; x.lineWidth = 9; x.lineCap = 'round';
+  x.beginPath(); x.moveTo(CX + 114, 652); x.lineTo(CX + 150, 500); x.stroke();
+  const g = x.createRadialGradient(CX + 156, 470, 4, CX + 156, 470, 58);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.45, 'rgba(255,90,120,.95)'); g.addColorStop(1, 'rgba(255,90,120,0)');
+  x.fillStyle = g; x.beginPath(); x.arc(CX + 156, 470, 58, 0, Math.PI * 2); x.fill();
+  x.fillStyle = '#D62839'; x.font = `700 46px ${BODY}`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('♥', CX, 548);
+}
+
+function idolCanvas(o) {
+  const W = 512, H = 1024, K = 0.75;
+  const art = document.createElement('canvas'); art.width = W * K; art.height = H * K;
+  const x = art.getContext('2d');
+  x.scale(K, K); x.translate(0, 62); x.lineJoin = 'round'; x.lineCap = 'round';
+  const hg = x.createLinearGradient(0, 70, 0, 740);
+  hg.addColorStop(0, shade(o.hair, 0.12)); hg.addColorStop(0.5, o.hair); hg.addColorStop(1, shade(o.hair, -0.05));
+  const line = shade(o.hair, o.lightHair ? -0.28 : -0.12);
+  drawBackHair(x, o, hg, line);
+  drawBody(x, o);
+  if (o.fan) drawFan(x);
+  drawFace(x, o);
+  drawFrontHair(x, o, hg, line);
+  // acrylic cut: white border around the silhouette plus a tab under the feet
+  const out = document.createElement('canvas'); out.width = art.width; out.height = art.height;
+  const c = out.getContext('2d');
+  const sil = document.createElement('canvas'); sil.width = art.width; sil.height = art.height;
+  const sx = sil.getContext('2d');
+  sx.drawImage(art, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = '#FFFFFF'; sx.fillRect(0, 0, sil.width, sil.height);
+  c.fillStyle = '#FFFFFF'; c.beginPath(); c.roundRect(CX * K - 60, 950 * K, 120, (H - 950) * K, 10); c.fill();
+  for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; c.drawImage(sil, Math.cos(a) * 7, Math.sin(a) * 7); }
+  c.drawImage(art, 0, 0);
+  return out;
+}
+
+const standeeCache = new Map();
+function standeeMaterials(o) {
+  const tex = new THREE.CanvasTexture(idolCanvas(o));
+  tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  return {
+    face: new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide }),
+    depth: new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: tex, alphaTest: 0.5 }),
+  };
+}
+function nameplate(text, color) {
+  const tex = canvasTex(512, 64, (x, w, h) => {
+    x.fillStyle = color; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#FFFFFF'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    fitFont(x, text, 800, DISPLAY, 44, 470); x.fillText(text, w / 2, h / 2 + 2);
+  });
+  const side = mat(color);
+  return [side, side, side, side, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.4 }), side];
+}
+function buildStandee(o, name, color) {
+  const fig = new THREE.Group();
+  const base = new THREE.Mesh(G.base, nameplate(name, color));
+  base.position.y = 0.06; base.castShadow = base.receiveShadow = true; fig.add(base);
+  const { face, depth } = standeeMaterials(o);
+  const card = new THREE.Mesh(G.standee, face);
+  card.customDepthMaterial = depth;
+  card.position.y = 0.1; card.castShadow = true; fig.add(card);
+  return fig;
+}
+
+function makeLabel(text) {
+  const scale = 2, fs = 30 * scale, pad = 14 * scale;
+  const probe = document.createElement('canvas').getContext('2d');
+  probe.font = `700 ${fs}px ${BODY}`;
+  const w = Math.ceil(probe.measureText(text).width + pad * 2), h = fs + pad * 1.4;
+  const tex = canvasTex(w, h, (x) => {
+    x.fillStyle = 'rgba(255,255,255,.95)';
+    x.beginPath(); x.roundRect(2, 2, w - 4, h - 4, h / 2 - 2); x.fill();
+    x.strokeStyle = 'rgba(22,35,58,.25)'; x.lineWidth = 3; x.stroke();
+    x.fillStyle = '#16233A'; x.font = `700 ${fs}px ${BODY}`; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(text, w / 2, h / 2 + 2);
+  });
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+  const hh = 0.38; s.scale.set(hh * w / h, hh, 1); s.renderOrder = 10;
+  return s;
+}
+
+function baseTile(R, color, plateMat) {
+  const g = new THREE.Group();
+  const sand = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.6, R + 1.0, 1.0, 6), mat(SAND, { roughness: 0.9 }));
+  sand.position.y = -0.3; sand.receiveShadow = true; g.add(sand);
+  const plate = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.3, 6), plateMat);
+  plate.position.y = 0.35; plate.receiveShadow = true; plate.castShadow = true; g.add(plate);
+  return g;
+}
+
+function signTex(g) {
+  return canvasTex(1024, 512, (x, w, h) => {
+    x.fillStyle = g.color; x.fillRect(0, 0, w, h);
+    x.fillStyle = 'rgba(0,0,0,.16)'; x.fillRect(0, h - 64, w, 64);
+    x.fillStyle = 'rgba(255,255,255,.85)'; x.font = `700 34px ${DISPLAY}`; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(g.label.split('').join(String.fromCharCode(8202)), w / 2, 70);
+    x.fillStyle = '#fff'; fitFont(x, g.name, 800, DISPLAY, 190, 900);
+    x.fillText(g.name, w / 2, 250);
+    x.font = `700 40px ${BODY}`;
+    x.fillText(g.endYear ? `${g.debutYear}–${g.endYear}` : `${g.debutYear} 出道 · ${g.members.length} 人`, w / 2, 400);
+  });
+}
+
+function buildIsland(g) {
+  const R = 5;
+  const a = THREE.MathUtils.degToRad(g.angle);
+  g.pos = new THREE.Vector3(Math.sin(a) * g.radius, 0, -Math.cos(a) * g.radius);
+  g.baseColor = new THREE.Color(g.color);
+  g.plateMat = new THREE.MeshStandardMaterial({ color: g.color, roughness: 0.38 });
+  g.grey = 0; g.targetGrey = 0; g.targetY = 0;
+
+  const root = new THREE.Group();
+  root.position.copy(g.pos);
+  root.userData.groupId = g.id;
+  root.add(baseTile(R, g.color, g.plateMat));
+
+  const dark = shade(g.color, -0.28);
+  const stage = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.4, 1.7), mat(dark));
+  stage.position.set(0, 0.7, -2.5); stage.castShadow = stage.receiveShadow = true; root.add(stage);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(5.6, 2.8, 0.25), mat(dark));
+  const front = new THREE.MeshStandardMaterial({ map: signTex(g), roughness: 0.5 });
+  back.material = [mat(dark), mat(dark), mat(dark), mat(dark), front, mat(dark)];
+  back.position.set(0, 2.3, -3.45); back.castShadow = true; root.add(back);
+  [-1, 1].forEach((s) => {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 3.4, 12), mat('#2B2D42'));
+    post.position.set(s * 2.95, 2.2, -3.3); post.castShadow = true; root.add(post);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10), mat('#FFF3C4', { emissive: '#FFE08A', emissiveIntensity: 0.8 }));
+    lamp.position.set(s * 2.95, 3.95, -3.3); root.add(lamp);
+  });
+
+  const n = g.members.length;
+  const backN = n > 5 ? Math.ceil(n / 2) : n;
+  g.members.forEach((m, i) => {
+    const onStage = i < backN;
+    const rowIdx = onStage ? i : i - backN;
+    const rowN = onStage ? backN : n - backN;
+    const light = new THREE.Color(m.hair).getHSL({}).l > 0.5;
+    const look = {
+      hair: m.hair, lightHair: light, style: m.style, bangs: m.bangs || ['curtain', 'full', 'side'][i % 3],
+      eyes: m.eyes || ['round', 'almond', 'droopy'][i % 3], mouth: m.mouth || ['smile', 'open'][i % 2], extra: m.extra,
+      iris: m.iris || '#8A5A3C', main: shade(g.color, (i % 3 - 1) * 0.04), acc: g.accent || shade(g.color, 0.18),
+      variant: m.outfit ?? i % 3, accessory: i % 3, shoe: i % 2 ? '#FFFFFF' : '#2B2F45',
+    };
+    const fig = buildStandee(look, m.name, shade(g.color, -0.2));
+    fig.position.set((rowIdx - (rowN - 1) / 2) * 1.05, onStage ? 0.9 : 0.5, onStage ? -2.4 : 0.3);
+    fig.userData.wx = g.pos.x + fig.position.x; fig.userData.wz = g.pos.z + fig.position.z;
+    fig.userData.baseY = fig.position.y;
+    fig.userData.member = m;
+    fig.userData.memberKey = m.key;
+    fig.userData.phase = Math.random() * Math.PI * 2;
+    fig.userData.jump = 1;
+    const label = makeLabel(m.name); label.position.y = 2.6; label.visible = false; fig.add(label);
+    const ring = new THREE.Mesh(G.ring, new THREE.MeshBasicMaterial({ color: '#F2B705' }));
+    ring.position.y = 0.05; ring.visible = false; fig.add(ring);
+    fig.userData.label = label; fig.userData.ring = ring;
+    m.fig = fig;
+    figs.push(fig);
+    root.add(fig);
+  });
+
+  scene.add(root);
+  pickables.push(root);
+  g.root = root;
+  buildBridge(g);
+}
+
+const plankMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.6 });
+function buildBridge(g) {
+  const dir = g.pos.clone().normalize();
+  const start = 6.2, end = g.pos.length() - 5.7, len = end - start;
+  const n = Math.floor(len / 0.8);
+  const offset = (len - n * 0.8) / 2;
+  const q = new THREE.Quaternion().setFromAxisAngle(UP, Math.atan2(dir.x, dir.z));
+  const im = new THREE.InstancedMesh(G.plank, plankMat, n);
+  const m = new THREE.Matrix4(), one = new THREE.Vector3(1, 1, 1);
+  const c1 = new THREE.Color(g.subsidiary ? '#B9C7D6' : '#9C6B3F'), c2 = new THREE.Color(g.subsidiary ? '#A3B3C4' : '#87592F');
+  for (let i = 0; i < n; i++) {
+    const p = dir.clone().multiplyScalar(start + offset + 0.4 + i * 0.8); p.y = 0.15;
+    m.compose(p, q, one); im.setMatrixAt(i, m); im.setColorAt(i, i % 2 ? c1 : c2);
+  }
+  im.castShadow = true; im.receiveShadow = true;
+  const bridge = new THREE.Group(); bridge.add(im);
+  const side = new THREE.Vector3(dir.z, 0, -dir.x);
+  [-1, 1].forEach((s) => {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, len), mat(g.subsidiary ? '#7E8FA3' : '#5E3B1E'));
+    rail.position.copy(dir.clone().multiplyScalar(start + len / 2).addScaledVector(side, s * 0.85)); rail.position.y = 0.5;
+    rail.quaternion.copy(q); rail.castShadow = true; bridge.add(rail);
+  });
+  scene.add(bridge);
+  g.bridge = bridge;
+  g.dir = dir;
+}
+
+function buildHQ() {
+  const R = 5.5;
+  const root = new THREE.Group();
+  root.userData.hq = true;
+  const plateMat = mat('#E6EBF1');
+  root.add(baseTile(R, '#E6EBF1', plateMat));
+  const windows = canvasTex(256, 256, (x, w, h) => {
+    x.fillStyle = '#F3F5F8'; x.fillRect(0, 0, w, h);
+    for (let r = 0; r < 5; r++) for (let c = 0; c < 4; c++) {
+      x.fillStyle = '#6FAEE0'; x.fillRect(18 + c * 58, 16 + r * 46, 46, 32);
+      x.fillStyle = 'rgba(255,255,255,.5)'; x.fillRect(22 + c * 58, 20 + r * 46, 14, 8);
+    }
+  });
+  const wm = new THREE.MeshStandardMaterial({ map: windows, roughness: 0.3 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(3.6, 4.4, 2.8), [wm, wm, mat('#F3F5F8'), mat('#F3F5F8'), wm, wm]);
+  body.position.set(0, 2.7, -0.6); body.castShadow = body.receiveShadow = true; root.add(body);
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(3.9, 0.22, 3.1), mat('#2B2D42'));
+  roof.position.set(0, 5.01, -0.6); roof.castShadow = true; root.add(roof);
+  const door = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.3, 0.1), mat('#2B2D42'));
+  door.position.set(0, 1.15, 0.82); root.add(door);
+  const signT = canvasTex(512, 160, (x, w, h) => {
+    x.fillStyle = '#16233A'; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#fff'; x.font = `800 104px ${DISPLAY}`; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText('JYP', w / 2, h / 2 + 6);
+  });
+  const sm = new THREE.MeshStandardMaterial({ map: signT, roughness: 0.5 });
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.94, 0.2), [mat('#16233A'), mat('#16233A'), mat('#16233A'), mat('#16233A'), sm, mat('#16233A')]);
+  sign.position.set(0, 5.6, 0.7); sign.castShadow = true; root.add(sign);
+  scene.add(root);
+  pickables.push(root);
+}
+
+function buildWalker() {
+  const fig = buildStandee({
+    hair: '#4A2E1E', style: 'short', bangs: 'side', eyes: 'round', mouth: 'open', iris: '#8A5A3C',
+    main: '#F4F4F8', acc: '#D62839', variant: 2, accessory: 2, shoe: '#FFFFFF', fan: true,
+  }, '粉絲', '#D62839');
+  fig.scale.setScalar(0.8);
+  scene.add(fig);
+  walker = { fig, queue: [], next: 0, island: null, speed: 2.4, baseY: 0.5 };
+  fig.position.set(0, 0.5, 4.6);
+}
+function walkerPlan() {
+  const visible = GROUPS.filter((g) => g.debutYear <= state.year);
+  if (!visible.length) return;
+  const idx = visible.findIndex((g) => GROUPS.indexOf(g) >= walker.next);
+  const g = idx >= 0 ? visible[idx] : visible[0];
+  walker.next = GROUPS.indexOf(g) + 1;
+  walker.island = g;
+  const d = g.dir, L = g.pos.length();
+  const P = (r, y) => { const v = d.clone().multiplyScalar(r); v.y = y; return v; };
+  const A = P(4.7, 0.5), B = P(6.3, 0.24), C = P(L - 5.8, 0.24), D = P(L - 3.4, 0.5);
+  walker.queue.push(A, B, C, D, C, B, A);
+}
+
+function initScene() {
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  stageEl.appendChild(renderer.domElement);
+
+  scene.background = new THREE.Color(cssVar('--sky'));
+  scene.fog = new THREE.Fog(cssVar('--sky'), 70, 160);
+
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = 1.28;
+  controls.minDistance = 4;
+  controls.maxDistance = 120;
+  controls.addEventListener('start', () => { fly = null; stopTour(); });
+
+  scene.add(new THREE.HemisphereLight('#ffffff', '#6C8296', 1.3));
+  const sun = new THREE.DirectionalLight('#FFF6E5', 2.2);
+  sun.position.set(26, 48, 22);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, near: 1, far: 140 });
+  sun.shadow.bias = -0.0006;
+  scene.add(sun);
+
+  seaGeo = new THREE.PlaneGeometry(260, 260, 64, 64).rotateX(-Math.PI / 2);
+  seaMat = new THREE.MeshStandardMaterial({ color: cssVar('--sea'), roughness: 0.28, metalness: 0.05 });
+  const sea = new THREE.Mesh(seaGeo, seaMat);
+  sea.position.y = -0.45; sea.receiveShadow = true;
+  scene.add(sea);
+
+  buildHQ();
+  GROUPS.forEach(buildIsland);
+  buildWalker();
+}
+
+/* ---------- Camera ---------- */
+let fly = null;
+const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+function flyTo(target, pos, dur = 1.3) {
+  if (!controls) return;
+  fly = { t: 0, dur: reduceMotion ? 0.001 : dur, fromT: controls.target.clone(), fromP: camera.position.clone(), toT: target, toP: pos };
+}
+const narrow = () => innerWidth <= 760;
+function overview() {
+  const k = narrow() ? 1.55 : 1;
+  flyTo(new THREE.Vector3(0, 0, 3), new THREE.Vector3(0, 40 * k, 46 * k));
+}
+function focusGroup(g) {
+  const k = narrow() ? 1.3 : 1;
+  const t = g.pos.clone().add(new THREE.Vector3(0, 1.2, -0.5));
+  flyTo(t, t.clone().add(new THREE.Vector3(0, 8.5 * k, 13 * k)));
+}
+function focusMember(m) {
+  const p = new THREE.Vector3();
+  m.fig.getWorldPosition(p);
+  p.y = Math.max(p.y, 0) + 1.2;
+  const k = narrow() ? 1.3 : 1;
+  flyTo(p, p.clone().add(new THREE.Vector3(0, 2.2 * k, 6 * k)));
+}
+
+/* ---------- Selection ---------- */
+function setHash(id) { try { history.replaceState(null, '', id ? '#' + id : location.pathname + location.search); } catch (e) { /* sandboxed */ } }
+function selectGroup(id) {
+  const g = groupById.get(id);
+  if (!g) return;
+  if (g.debutYear > state.year) setYear(Math.max(state.year, g.debutYear));
+  state.groupId = id; state.memberKey = null;
+  renderPanel(); refreshMarks(); focusGroup(g); setHash(id);
+}
+function selectMember(key) {
+  const m = memberByKey.get(key);
+  if (!m) return;
+  if (state.groupId !== m.group.id) { state.groupId = m.group.id; setHash(m.group.id); }
+  state.memberKey = key;
+  m.fig && (m.fig.userData.jump = 0);
+  renderPanel(); refreshMarks();
+  m.fig && focusMember(m);
+  const row = document.querySelector(`tr[data-m="${CSS.escape(key)}"]`);
+  row && row.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+}
+function goHome() {
+  state.groupId = null; state.memberKey = null;
+  renderPanel(); refreshMarks(); overview(); setHash(null);
+}
+function refreshMarks() {
+  figs.forEach((fig) => {
+    const m = fig.userData.member;
+    const sel = state.memberKey === m.key;
+    const nat = !!state.nat && m.nat === state.nat;
+    fig.userData.label.visible = state.memberKey ? sel : (state.groupId === m.group.id || nat);
+    fig.userData.ring.visible = sel || nat;
+    fig.userData.ring.material.color.set(sel ? '#D62839' : '#F2B705');
+  });
+}
+
+function applyYear() {
+  GROUPS.forEach((g) => {
+    if (!g.root) return;
+    const vis = g.debutYear <= state.year;
+    g.targetY = vis ? 0 : -4.5;
+    g.bridge.visible = vis;
+    g.targetGrey = g.endYear && state.year >= g.endYear ? 1 : 0;
+  });
+  if (walker && walker.island && walker.island.debutYear > state.year) {
+    walker.queue = [walker.island.dir.clone().multiplyScalar(4.7).setY(0.5)];
+  }
+}
+
+/* ---------- Tour ---------- */
+let tourTimer = null;
+function stopTour() {
+  if (!state.touring) return;
+  state.touring = false; clearTimeout(tourTimer);
+  $('#btnTour').textContent = '▶ 出道導覽';
+}
+function startTour() {
+  const steps = [...GROUPS].sort((a, b) => a.debut.localeCompare(b.debut));
+  let i = 0;
+  state.touring = true;
+  $('#btnTour').textContent = '■ 停止導覽';
+  const step = () => {
+    if (!state.touring) return;
+    if (i >= steps.length) { stopTour(); setYear(2026); goHome(); return; }
+    const g = steps[i++];
+    setYear(g.debutYear);
+    selectGroup(g.id);
+    tourTimer = setTimeout(step, 4600);
+  };
+  step();
+}
+$('#btnTour').addEventListener('click', () => (state.touring ? stopTour() : startTour()));
+$('#btnHome').addEventListener('click', () => { stopTour(); goHome(); });
+addEventListener('keydown', (e) => { if (e.key === 'Escape') { stopTour(); goHome(); } });
+
+/* ---------- Picking ---------- */
+const ray = new THREE.Raycaster();
+const ptr = new THREE.Vector2();
+function hitAt(e) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ptr.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ptr, camera);
+  for (const h of ray.intersectObjects(pickables, true)) {
+    if (!h.object.visible) continue;
+    for (let o = h.object; o; o = o.parent) {
+      if (o.userData.memberKey) {
+        if (memberByKey.get(o.userData.memberKey).group.debutYear > state.year) break;
+        return { member: o.userData.memberKey };
+      }
+      if (o.userData.groupId) {
+        if (groupById.get(o.userData.groupId).debutYear > state.year) break;
+        return { group: o.userData.groupId };
+      }
+      if (o.userData.hq) return { hq: true };
+    }
+  }
+  return null;
+}
+
+/* ---------- Theme ---------- */
+function applySceneTheme() {
+  if (!renderer) return;
+  scene.background.set(cssVar('--sky'));
+  scene.fog.color.set(cssVar('--sky'));
+  seaMat.color.set(cssVar('--sea'));
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applySceneTheme);
+new MutationObserver(applySceneTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+/* ---------- Boot ---------- */
+renderPanel();
+setYear(2026);
+
+if (renderer) {
+  initScene();
+  applyYear();
+  GROUPS.forEach((g) => { g.root.position.y = g.targetY; });
+
+  const resize = () => {
+    const w = innerWidth, h = innerHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    const pr = $('#panel').getBoundingClientRect();
+    const sx = narrow() ? 0 : (pr.width + 16) / 2;
+    const sy = narrow() ? Math.max(0, h - pr.top) / 2 : 0;
+    camera.setViewOffset(w, h, sx, sy, w, h);
+    camera.updateProjectionMatrix();
+  };
+  addEventListener('resize', resize);
+  resize();
+
+  const k = narrow() ? 1.55 : 1;
+  camera.position.set(0, 40 * k, 46 * k);
+  controls.target.set(0, 0, 3);
+
+  const canvas = renderer.domElement;
+  let down = null, hoverQueued = false, lastMove = null;
+  canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener('pointerup', (e) => {
+    if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) { down = null; return; }
+    down = null;
+    const hit = hitAt(e);
+    if (!hit) return;
+    stopTour();
+    if (hit.member) selectMember(hit.member);
+    else if (hit.group) selectGroup(hit.group);
+    else if (hit.hq) goHome();
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    lastMove = e;
+    if (hoverQueued || e.pointerType !== 'mouse') return;
+    hoverQueued = true;
+    requestAnimationFrame(() => { hoverQueued = false; canvas.style.cursor = hitAt(lastMove) ? 'pointer' : 'grab'; });
+  });
+
+  const initial = location.hash.slice(1);
+  if (groupById.has(initial)) selectGroup(initial);
+
+  const clock = new THREE.Clock();
+  let frame = 0;
+  const seaPos = seaGeo.attributes.position;
+  renderer.setAnimationLoop(() => {
+    const dt = Math.min(clock.getDelta(), 0.05);
+    const t = clock.elapsedTime;
+    frame++;
+
+    if (fly) {
+      fly.t += dt;
+      const kk = ease(Math.min(1, fly.t / fly.dur));
+      controls.target.lerpVectors(fly.fromT, fly.toT, kk);
+      camera.position.lerpVectors(fly.fromP, fly.toP, kk);
+      if (kk >= 1) fly = null;
+    }
+    controls.update();
+
+    if (!reduceMotion && frame % 2 === 0) {
+      for (let i = 0; i < seaPos.count; i++) {
+        const x = seaPos.getX(i), z = seaPos.getZ(i);
+        seaPos.setY(i, Math.sin(x * 0.18 + t * 0.9) * 0.07 + Math.cos(z * 0.14 + t * 0.7) * 0.07);
+      }
+      seaPos.needsUpdate = true;
+      seaGeo.computeVertexNormals();
+    }
+
+    const lerpK = Math.min(1, dt * 4);
+    GROUPS.forEach((g) => {
+      g.root.position.y += (g.targetY - g.root.position.y) * lerpK;
+      g.grey += (g.targetGrey - g.grey) * lerpK;
+      g.plateMat.color.copy(g.baseColor).lerp(GREY, g.grey * 0.7);
+    });
+
+    const cam = camera.position;
+    figs.forEach((fig) => {
+      const u = fig.userData;
+      const sel = state.memberKey === u.member.key;
+      fig.rotation.y = Math.atan2(cam.x - u.wx, cam.z - u.wz) + (reduceMotion ? 0 : Math.sin(t * 0.8 + u.phase) * 0.06);
+      if (u.jump < 1) u.jump = Math.min(1, u.jump + dt * 1.8);
+      const hop = u.jump < 0.5 ? Math.sin(Math.PI * u.jump * 2) * 0.45 : 0;
+      const bob = sel && !reduceMotion ? Math.abs(Math.sin(t * 4)) * 0.12 : 0;
+      fig.position.y = u.baseY + hop + bob;
+    });
+
+    if (walker) {
+      if (!walker.queue.length) walkerPlan();
+      const target = walker.queue[0];
+      const f = walker.fig;
+      if (target) {
+        const dx = target.x - f.position.x, dz = target.z - f.position.z;
+        const dist = Math.hypot(dx, dz);
+        const stepLen = walker.speed * dt;
+        if (dist <= stepLen || dist < 0.01) { walker.baseY = target.y; f.position.x = target.x; f.position.z = target.z; walker.queue.shift(); }
+        else {
+          f.position.x += dx / dist * stepLen;
+          f.position.z += dz / dist * stepLen;
+          walker.baseY += (target.y - walker.baseY) * Math.min(1, stepLen / dist);
+        }
+      }
+      f.position.y = walker.baseY + (reduceMotion ? 0 : Math.abs(Math.sin(t * 8)) * 0.12);
+      f.rotation.y = Math.atan2(cam.x - f.position.x, cam.z - f.position.z);
+    }
+
+    renderer.render(scene, camera);
+  });
+}
+</script>
+</body>
+</html>
